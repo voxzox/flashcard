@@ -1,76 +1,239 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>Flashcards</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>비즈니스 영어 플래시카드</title>
   <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #11161d;
+      color: #f5f5f5;
+    }
+
     body {
-      font-family: Arial;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      padding: 24px 18px 28px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      margin-top: 100px;
+      justify-content: flex-start;
     }
+
+    .title {
+      text-align: center;
+      font-size: 2.1rem;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      margin: 12px 0 20px;
+    }
+
     .card {
-      width: 300px;
-      height: 200px;
-      border: 1px solid #ccc;
-      border-radius: 12px;
+      width: 100%;
+      min-height: 62vh;
+      border: 2px solid rgba(255,255,255,0.18);
+      border-radius: 34px;
+      background: linear-gradient(180deg, #171d25 0%, #131922 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
-      cursor: pointer;
-      padding: 20px;
       text-align: center;
+      padding: 28px;
+      font-size: clamp(2rem, 7vw, 3.2rem);
+      line-height: 1.28;
+      letter-spacing: -0.03em;
+      cursor: pointer;
+      user-select: none;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.04),
+        0 10px 30px rgba(0,0,0,0.28);
     }
-    button {
-      margin-top: 20px;
-      padding: 10px 20px;
+
+    .controls {
+      margin-top: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .btn {
+      border: 2px solid rgba(255,255,255,0.16);
+      background: transparent;
+      color: #f5f5f5;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      min-height: 72px;
+      padding: 0 22px;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-circle {
+      width: 72px;
+      min-width: 72px;
+      padding: 0;
+    }
+
+    .btn-main {
+      flex: 1;
+      font-size: 1.15rem;
+      font-weight: 600;
+      gap: 8px;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 18px;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.95rem;
+    }
+
+    .hint {
+      text-align: center;
+      margin-top: 10px;
+      color: rgba(255,255,255,0.45);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 390px) {
+      .app {
+        padding: 18px 14px 24px;
+      }
+
+      .title {
+        font-size: 1.8rem;
+      }
+
+      .card {
+        min-height: 58vh;
+        border-radius: 28px;
+        padding: 22px;
+        font-size: clamp(1.7rem, 6.8vw, 2.6rem);
+      }
+
+      .btn {
+        min-height: 64px;
+      }
+
+      .btn-circle {
+        width: 64px;
+        min-width: 64px;
+      }
     }
   </style>
 </head>
-
 <body>
+  <div class="app">
+    <div class="title">비즈니스 영어 플래시카드</div>
 
-<div class="card" onclick="flipCard()">
-  Loading...
-</div>
+    <div class="card" id="card">불러오는 중...</div>
 
-<button onclick="nextCard()">Next</button>
+    <div class="controls">
+      <button class="btn btn-circle" id="flipBtn" aria-label="카드 뒤집기">↺</button>
+      <button class="btn btn-main" id="nextBtn">다음 카드 →</button>
+    </div>
 
-<script>
-let data = [];
-let current = {};
-let flipped = false;
+    <div class="status" id="status">시트 연결 중...</div>
+    <div class="hint">카드를 터치하면 뜻이 보여요</div>
+  </div>
 
-// 👉 여기 URL 바꿔줘
-const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQfYNrWsEKx1sxpJZLFDV_mCpc_BPvO-zSqPSIaFB62rGJaZ9y-GE20jirJuat5nn5mlLGCOX4fKbg2/pub?output=csv";
+  <script>
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQfYNrWsEKx1sxpJZLFDV_mCpc_BPvO-zSqPSlaFB62rGJaZ9y-GE20jirJuat5nn5mLGCOX4fKbg2/pub?output=csv";
 
-fetch(SHEET_URL)
-  .then(res => res.text())
-  .then(text => {
-    const rows = text.split("\n").slice(1);
-    data = rows.map(row => {
-      const [front, back] = row.split(",");
-      return { front, back };
-    });
-    nextCard();
-  });
+    let cards = [];
+    let currentCard = null;
+    let isFlipped = false;
 
-function nextCard() {
-  flipped = false;
-  current = data[Math.floor(Math.random() * data.length)];
-  document.querySelector(".card").innerText = current.front;
-}
+    const cardEl = document.getElementById("card");
+    const statusEl = document.getElementById("status");
+    const flipBtn = document.getElementById("flipBtn");
+    const nextBtn = document.getElementById("nextBtn");
 
-function flipCard() {
-  flipped = !flipped;
-  document.querySelector(".card").innerText = flipped
-    ? current.back
-    : current.front;
-}
-</script>
+    async function loadCards() {
+      try {
+        const response = await fetch(SHEET_URL);
+        const csvText = await response.text();
 
+        const lines = csvText
+          .split(/\r?\n/)
+          .map(line => line.trim())
+          .filter(line => line !== "");
+
+        if (lines.length <= 1) {
+          cardEl.textContent = "데이터가 없어요";
+          statusEl.textContent = "시트에 카드 내용을 넣어주세요";
+          return;
+        }
+
+        const dataLines = lines.slice(1);
+
+        cards = dataLines.map(line => {
+          const parts = line.split(",");
+          return {
+            front: (parts[0] || "").replace(/^"|"$/g, "").trim(),
+            back: (parts[1] || "").replace(/^"|"$/g, "").trim()
+          };
+        }).filter(card => card.front && card.back);
+
+        if (cards.length === 0) {
+          cardEl.textContent = "카드를 읽지 못했어요";
+          statusEl.textContent = "front / back 열을 확인해 주세요";
+          return;
+        }
+
+        statusEl.textContent = `총 ${cards.length}개 카드`;
+        showRandomCard();
+      } catch (error) {
+        console.error(error);
+        cardEl.textContent = "불러오기 실패";
+        statusEl.textContent = "시트 링크 또는 공개 설정을 확인해 주세요";
+      }
+    }
+
+    function showRandomCard() {
+      if (cards.length === 0) return;
+      const randomIndex = Math.floor(Math.random() * cards.length);
+      currentCard = cards[randomIndex];
+      isFlipped = false;
+      cardEl.textContent = currentCard.front;
+    }
+
+    function flipCard() {
+      if (!currentCard) return;
+      isFlipped = !isFlipped;
+      cardEl.textContent = isFlipped ? currentCard.back : currentCard.front;
+    }
+
+    cardEl.addEventListener("click", flipCard);
+    flipBtn.addEventListener("click", flipCard);
+    nextBtn.addEventListener("click", showRandomCard);
+
+    loadCards();
+  </script>
 </body>
 </html>
