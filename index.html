@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>비즈니스 영어 플래시카드</title>
   <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
-
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
       margin: 0;
       padding: 0;
@@ -19,13 +15,11 @@
       background: #11161d;
       color: #f5f5f5;
     }
-
     body {
       min-height: 100vh;
       display: flex;
       justify-content: center;
     }
-
     .app {
       width: 100%;
       max-width: 480px;
@@ -33,17 +27,13 @@
       padding: 24px 18px 28px;
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
     }
-
     .title {
       text-align: center;
-      font-size: 2.1rem;
+      font-size: 2rem;
       font-weight: 500;
-      letter-spacing: -0.02em;
       margin: 12px 0 20px;
     }
-
     .card {
       width: 100%;
       min-height: 62vh;
@@ -57,24 +47,17 @@
       padding: 28px;
       font-size: clamp(2rem, 7vw, 3.2rem);
       line-height: 1.28;
-      letter-spacing: -0.03em;
       cursor: pointer;
       user-select: none;
       word-break: keep-all;
       overflow-wrap: break-word;
-      box-shadow:
-        inset 0 1px 0 rgba(255,255,255,0.04),
-        0 10px 30px rgba(0,0,0,0.28);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 10px 30px rgba(0,0,0,0.28);
     }
-
     .controls {
       margin-top: 18px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
       gap: 12px;
     }
-
     .btn {
       border: 2px solid rgba(255,255,255,0.16);
       background: transparent;
@@ -84,80 +67,40 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.1rem;
       min-height: 72px;
       padding: 0 22px;
     }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
     .btn-circle {
       width: 72px;
       min-width: 72px;
       padding: 0;
+      font-size: 1.4rem;
     }
-
-    .btn-main {
-      flex: 1;
-      font-size: 1.15rem;
-      font-weight: 600;
-      gap: 8px;
-    }
-
+    .btn-main { flex: 1; font-weight: 600; }
     .status {
       text-align: center;
       margin-top: 18px;
-      color: rgba(255,255,255,0.6);
+      color: rgba(255,255,255,0.7);
       font-size: 0.95rem;
+      white-space: pre-line;
     }
-
     .hint {
       text-align: center;
       margin-top: 10px;
       color: rgba(255,255,255,0.45);
       font-size: 0.88rem;
     }
-
-    @media (max-width: 390px) {
-      .app {
-        padding: 18px 14px 24px;
-      }
-
-      .title {
-        font-size: 1.8rem;
-      }
-
-      .card {
-        min-height: 58vh;
-        border-radius: 28px;
-        padding: 22px;
-        font-size: clamp(1.7rem, 6.8vw, 2.6rem);
-      }
-
-      .btn {
-        min-height: 64px;
-      }
-
-      .btn-circle {
-        width: 64px;
-        min-width: 64px;
-      }
-    }
   </style>
 </head>
 <body>
   <div class="app">
     <div class="title">비즈니스 영어 플래시카드</div>
-
     <div class="card" id="card">불러오는 중...</div>
-
     <div class="controls">
-      <button class="btn btn-circle" id="flipBtn" aria-label="카드 뒤집기">↺</button>
+      <button class="btn btn-circle" id="flipBtn">↺</button>
       <button class="btn btn-main" id="nextBtn">다음 카드 →</button>
     </div>
-
     <div class="status" id="status">시트 연결 중...</div>
     <div class="hint">카드를 터치하면 뜻이 보여요</div>
   </div>
@@ -176,47 +119,64 @@
 
     async function loadCards() {
       try {
-        const response = await fetch(SHEET_URL);
+        const response = await fetch(SHEET_URL, { cache: "no-store" });
         const csvText = await response.text();
 
-        const lines = csvText
-          .split(/\r?\n/)
-          .map(line => line.trim())
-          .filter(line => line !== "");
+        const cleanText = csvText.replace(/^\uFEFF/, "").trim();
 
-        if (lines.length <= 1) {
-          cardEl.textContent = "데이터가 없어요";
-          statusEl.textContent = "시트에 카드 내용을 넣어주세요";
+        statusEl.textContent = `응답 길이: ${cleanText.length}자`;
+
+        if (!cleanText) {
+          cardEl.textContent = "불러온 내용이 비어 있어요";
+          statusEl.textContent = "CSV가 비어 있습니다";
           return;
         }
 
-        const dataLines = lines.slice(1);
+        const lines = cleanText
+          .split(/\r?\n/)
+          .map(line => line.trim())
+          .filter(Boolean);
 
-        cards = dataLines.map(line => {
-          const parts = line.split(",");
-          return {
-            front: (parts[0] || "").replace(/^"|"$/g, "").trim(),
-            back: (parts[1] || "").replace(/^"|"$/g, "").trim()
-          };
-        }).filter(card => card.front && card.back);
+        if (lines.length < 2) {
+          cardEl.textContent = "시트 데이터가 부족해요";
+          statusEl.textContent = `행 수: ${lines.length}\n헤더만 있거나 비어 있어요`;
+          return;
+        }
+
+        cards = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i];
+          const firstCommaIndex = line.indexOf(",");
+
+          if (firstCommaIndex === -1) continue;
+
+          let front = line.slice(0, firstCommaIndex).trim();
+          let back = line.slice(firstCommaIndex + 1).trim();
+
+          front = front.replace(/^"|"$/g, "").trim();
+          back = back.replace(/^"|"$/g, "").trim();
+
+          if (front && back) {
+            cards.push({ front, back });
+          }
+        }
 
         if (cards.length === 0) {
           cardEl.textContent = "카드를 읽지 못했어요";
-          statusEl.textContent = "front / back 열을 확인해 주세요";
+          statusEl.textContent = `총 줄 수: ${lines.length}\nfront/back 파싱 실패`;
           return;
         }
 
-        statusEl.textContent = `총 ${cards.length}개 카드`;
+        statusEl.textContent = `총 ${cards.length}개 카드 로드 완료`;
         showRandomCard();
       } catch (error) {
-        console.error(error);
         cardEl.textContent = "불러오기 실패";
-        statusEl.textContent = "시트 링크 또는 공개 설정을 확인해 주세요";
+        statusEl.textContent = `오류: ${error.message}`;
       }
     }
 
     function showRandomCard() {
-      if (cards.length === 0) return;
+      if (!cards.length) return;
       const randomIndex = Math.floor(Math.random() * cards.length);
       currentCard = cards[randomIndex];
       isFlipped = false;
